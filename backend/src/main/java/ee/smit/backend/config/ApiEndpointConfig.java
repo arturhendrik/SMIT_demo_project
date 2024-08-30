@@ -5,6 +5,7 @@ import java.util.List;
 public class ApiEndpointConfig {
     private String url;
     private String getRequest;
+    private String postOrPutRequest;
     private String responseType;
     private String name;
     private String address;
@@ -24,6 +25,14 @@ public class ApiEndpointConfig {
 
     public void setGetRequest(String getRequest) {
         this.getRequest = getRequest;
+    }
+
+    public String getPostOrPutRequest() {
+        return postOrPutRequest;
+    }
+
+    public void setPostOrPutRequest(String postOrPutRequest) {
+        this.postOrPutRequest = postOrPutRequest;
     }
 
     public String getResponseType() {
@@ -56,5 +65,9 @@ public class ApiEndpointConfig {
 
     public void setVehicleTypes(List<String> vehicleTypes) {
         this.vehicleTypes = vehicleTypes;
+    }
+
+    public String getPostOrPutRequestUrl(String id) {
+        return postOrPutRequest.replace("{id}", id);
     }
 }

@@ -6,6 +6,12 @@ export type TireChangeData = {
   vehicleTypes: string[];
 };
 
+export type BookingData = {
+  id: string;
+  contactInformation: string;
+  name: string;
+};
+
 export type DateRange = {
   start: string;
   end: string;
@@ -13,4 +19,5 @@ export type DateRange = {
 
 export interface TireChangeSchedulerProps {
   data: TireChangeData[];
+  onBookingSuccess: () => void;
 }

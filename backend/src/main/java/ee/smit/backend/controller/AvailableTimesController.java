@@ -1,10 +1,11 @@
 package ee.smit.backend.controller;
 
 import ee.smit.backend.dto.AvailableTime;
+import ee.smit.backend.dto.BookingRequest;
 import ee.smit.backend.service.AvailableTimesService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -17,5 +18,13 @@ public class AvailableTimesController {
     @GetMapping("/available-times")
     public List<AvailableTime> getAvailableTimes() {
         return availableTimesService.getAvailableTimes();
+    }
+
+    @PostMapping("/book-time")
+    public Mono<String> bookTime(@RequestBody BookingRequest bookingRequest) {
+        String id = bookingRequest.getId();
+        String contactInformation = bookingRequest.getContactInformation();
+        String name = bookingRequest.getName();
+        return availableTimesService.bookTime(id, contactInformation, name);
     }
 }

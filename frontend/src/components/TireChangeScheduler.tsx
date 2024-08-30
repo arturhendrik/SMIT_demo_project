@@ -1,15 +1,29 @@
 import React, { useState } from "react";
-import { Table, Form, Row, Col, Container } from "react-bootstrap";
+import {
+  Table,
+  Form,
+  Row,
+  Col,
+  Container,
+  Button,
+  Alert,
+} from "react-bootstrap";
 import {
   DateRange,
   TireChangeData,
   TireChangeSchedulerProps,
-} from "./common/types";
+} from "../common/types";
+import postRequest from "../services/postRequest";
 
-const TireChangeScheduler: React.FC<TireChangeSchedulerProps> = ({ data }) => {
+const TireChangeScheduler: React.FC<TireChangeSchedulerProps> = ({
+  data,
+  onBookingSuccess,
+}) => {
   const [selectedShop, setSelectedShop] = useState<string>("");
   const [dateRange, setDateRange] = useState<DateRange>({ start: "", end: "" });
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>("");
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [showAlert, setShowAlert] = useState(false);
 
   const handleShopChange = (e: React.ChangeEvent<any>) =>
     setSelectedShop(e.target.value);
@@ -70,9 +84,35 @@ const TireChangeScheduler: React.FC<TireChangeSchedulerProps> = ({ data }) => {
 
   const filteredData = filterData();
 
+  const handleBooking = async (id: string, name: string) => {
+    try {
+      const contactInformation = "artur.hendrik@gmail.com";
+      const result = await postRequest({ id, contactInformation, name });
+      setSubmitMessage(`Success: ${result}`);
+      onBookingSuccess();
+    } catch (error) {
+      if (error instanceof Error) {
+        setSubmitMessage(`Failed to book: ${error.message}`);
+      } else {
+        setSubmitMessage("Failed to book: An unknown error occurred.");
+      }
+    }
+    setShowAlert(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <Container>
       <h1 className="my-4">Tire Change Scheduler</h1>
+      {submitMessage && showAlert && (
+        <Alert
+          variant={submitMessage.startsWith("Success") ? "success" : "danger"}
+          dismissible
+          onClose={() => setShowAlert(false)}
+        >
+          {submitMessage}
+        </Alert>
+      )}
       <Form>
         <Row className="mb-3">
           <Col md={3}>
@@ -142,6 +182,7 @@ const TireChangeScheduler: React.FC<TireChangeSchedulerProps> = ({ data }) => {
             <th>Address</th>
             <th>Time</th>
             <th>Vehicle Types</th>
+            <th>Booking</th>
           </tr>
         </thead>
         <tbody>
@@ -152,11 +193,19 @@ const TireChangeScheduler: React.FC<TireChangeSchedulerProps> = ({ data }) => {
                 <td>{item.address}</td>
                 <td>{new Date(item.time).toLocaleString()}</td>
                 <td>{item.vehicleTypes.join(", ")}</td>
+                <td>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleBooking(item.id, item.name)}
+                  >
+                    Book
+                  </Button>
+                </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan={4} className="text-center">
+              <td colSpan={5} className="text-center">
                 No results found
               </td>
             </tr>

@@ -9,6 +9,7 @@ import ee.smit.backend.model.AvailableTimeXml;
 import ee.smit.backend.model.TireChangeTimesResponse;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -94,18 +95,67 @@ public class AvailableTimesService {
         try {
             AvailableTimeJson[] timeJsons = objectMapper.readValue(jsonResponse, AvailableTimeJson[].class);
             for (AvailableTimeJson availableTimeJson : timeJsons) {
-                availableTimes.add(new AvailableTime(
-                        String.valueOf(availableTimeJson.getId()),
-                        availableTimeJson.getTime(),
-                        name,
-                        address,
-                        vehicleTypes
-                ));
+                if (availableTimeJson.isAvailable()) {
+                    availableTimes.add(new AvailableTime(
+                            String.valueOf(availableTimeJson.getId()),
+                            availableTimeJson.getTime(),
+                            name,
+                            address,
+                            vehicleTypes
+                    ));
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         return availableTimes;
+    }
+
+    public Mono<String> bookTime(String id, String contactInformation, String name) {
+        ApiEndpointConfig endpoint = findApiEndpointByName(name);
+        if (endpoint == null) {
+            throw new IllegalArgumentException("No endpoint found for name: " + name);
+        }
+
+        String url = endpoint.getUrl()+endpoint.getPostOrPutRequestUrl(id);
+
+        if ("xml".equalsIgnoreCase(endpoint.getResponseType())) {
+            String xmlBody = generateXmlRequestBody(name, contactInformation);
+            return webClient.put()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_XML)
+                    .bodyValue(xmlBody)
+                    .retrieve()
+                    .bodyToMono(String.class);
+        } else if ("json".equalsIgnoreCase(endpoint.getResponseType())) {
+            String jsonBody = generateJsonRequestBody(contactInformation);
+            return webClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(jsonBody)
+                    .retrieve()
+                    .bodyToMono(String.class);
+        } else {
+            return Mono.error(new IllegalArgumentException("Unsupported response type: " + endpoint.getResponseType()));
+        }
+    }
+
+    private String generateXmlRequestBody(String name, String contactInformation) {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                "<"+name+".tireChangeBookingRequest>" +
+                "<contactInformation>" + contactInformation + "</contactInformation>" +
+                "</"+name+".tireChangeBookingRequest>";
+    }
+
+    private String generateJsonRequestBody(String contactInformation) {
+        return "{ \"contactInformation\": \"" + contactInformation + "\" }";
+    }
+
+    private ApiEndpointConfig findApiEndpointByName(String name) {
+        return apiConfig.getEndpoints().stream()
+                .filter(endpoint -> name.equals(endpoint.getName()))
+                .findFirst()
+                .orElse(null);
     }
 }
